@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📺 Indian IPTV Channels</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #f8b400;
+      margin-bottom: 10px;
+    }
+    video {
+      width: 90%;
+      max-width: 800px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      background: #000;
+    }
+    #channel-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #f8b400;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #ffcc00;
+    }
+  </style>
+</head>
+<body>
+  <h1>🇮🇳 Indian Live TV Channels</h1>
+  <video id="player" controls autoplay></video>
+  <div id="channel-buttons">Loading channels...</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const video = document.getElementById('player');
+    const buttonsContainer = document.getElementById('channel-buttons');
+
+    function playStream(url) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play();
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.addEventListener('loadedmetadata', () => {
+          video.play();
+        });
+      } else {
+        alert("Your browser doesn't support HLS streaming.");
+      }
+    }
+
+    async function loadChannels() {
+      try {
+        const response = await fetch("https://iptv-org.github.io/iptv/countries/in.m3u");
+        const text = await response.text();
+        const lines = text.split("\n");
+
+        let channelName = "";
+        buttonsContainer.innerHTML = ""; // Clear loading text
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+
+          if (line.startsWith("#EXTINF")) {
+            const parts = line.split(",");
+            channelName = parts[1] || "Unknown Channel";
+          }
+
+          if (line.startsWith("http")) {
+            const streamUrl = line;
+            const button = document.createElement("button");
+            button.textContent = channelName;
+            button.onclick = () => playStream(streamUrl);
+            buttonsContainer.appendChild(button);
+          }
+        }
+
+      } catch (err) {
+        buttonsContainer.innerHTML = "<p>Failed to load channels.</p>";
+        console.error("Error loading m3u:", err);
+      }
+    }
+
+    loadChannels();
+  </script>
+</body>
+</html>
